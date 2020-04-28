@@ -1,0 +1,244 @@
+{
+  "Parameters": {
+    "orderStreamName": {
+      "Type": "String",
+      "Description": "The name of the kinesis order stream"
+    },
+    "orderStreamShards": {
+      "Type": "Number",
+      "Description": "Number of shards for kinesis order stream"
+    },
+    "orderEnrichedStreamName": {
+      "Type": "String",
+      "Description": "The name of the kinesis order enriched stream"
+    },
+    "orderEnrichedStreamShards": {
+      "Type": "Number",
+      "Description": "Number of shards for kinesis order enriched stream"
+    }
+  },
+  "Resources": {
+    "OrderStreamId16ACDCBF": {
+      "Type": "AWS::Kinesis::Stream",
+      "Properties": {
+        "ShardCount": {
+          "Ref": "orderStreamShards"
+        },
+        "Name": {
+          "Ref": "orderStreamName"
+        },
+        "RetentionPeriodHours": 24,
+        "StreamEncryption": {
+          "Fn::If": [
+            "AwsCdkKinesisEncryptedStreamsUnsupportedRegions",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            {
+              "EncryptionType": "KMS",
+              "KeyId": "alias/aws/kinesis"
+            }
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "KinesisStreamETLStack/OrderStreamId/Resource"
+      }
+    },
+    "OrderEnrichedStreamId15AF2C77": {
+      "Type": "AWS::Kinesis::Stream",
+      "Properties": {
+        "ShardCount": {
+          "Ref": "orderStreamShards"
+        },
+        "Name": {
+          "Ref": "orderEnrichedStreamName"
+        },
+        "RetentionPeriodHours": 24,
+        "StreamEncryption": {
+          "Fn::If": [
+            "AwsCdkKinesisEncryptedStreamsUnsupportedRegions",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            {
+              "EncryptionType": "KMS",
+              "KeyId": "alias/aws/kinesis"
+            }
+          ]
+        }
+      },
+      "Metadata": {
+        "aws:cdk:path": "KinesisStreamETLStack/OrderEnrichedStreamId/Resource"
+      }
+    },
+    "kdaOrderRole3DBC5E59": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "kinesisanalytics.amazonaws.com"
+              }
+            }
+          ],
+          "Version": "2012-10-17"
+        },
+        "Policies": [
+          {
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Action": [
+                    "kinesis:DescribeStream",
+                    "kinesis:GetShardIterator",
+                    "kinesis:GetRecords"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "OrderStreamId16ACDCBF",
+                      "Arn"
+                    ]
+                  },
+                  "Sid": "ReadKinesisInput"
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "PolicyName": "kdaPolicy"
+          }
+        ]
+      },
+      "Metadata": {
+        "aws:cdk:path": "KinesisStreamETLStack/kdaOrderRole/Resource"
+      }
+    },
+    "KDAOrderETLAppId": {
+      "Type": "AWS::KinesisAnalytics::Application",
+      "Properties": {
+        "Inputs": [
+          {
+            "InputSchema": {
+              "RecordColumns": [
+                {
+                  "Mapping": "$.orderId",
+                  "Name": "orderId",
+                  "SqlType": "INT"
+                },
+                {
+                  "Mapping": "$.orderId",
+                  "Name": "itemId",
+                  "SqlType": "INT"
+                },
+                {
+                  "Mapping": "$.itemQuantity",
+                  "Name": "itemQuantity",
+                  "SqlType": "INT"
+                },
+                {
+                  "Mapping": "$.itemAmount",
+                  "Name": "itemAmount",
+                  "SqlType": "REAL"
+                },
+                {
+                  "Mapping": "$.itemStatus",
+                  "Name": "itemStatus",
+                  "SqlType": "VARCHAR(8)"
+                },
+                {
+                  "Mapping": "$.orderDateTime",
+                  "Name": "orderDateTime",
+                  "SqlType": "TIMESTAMP"
+                },
+                {
+                  "Mapping": "$.recordType",
+                  "Name": "recordType",
+                  "SqlType": "VARCHAR(16)"
+                },
+                {
+                  "Mapping": "$.orderStatus",
+                  "Name": "orderStatus",
+                  "SqlType": "VARCHAR(8)"
+                },
+                {
+                  "Mapping": "$.shipToName",
+                  "Name": "shipToName",
+                  "SqlType": "VARCHAR(32)"
+                },
+                {
+                  "Mapping": "$.shipToAddress",
+                  "Name": "shipToAddress",
+                  "SqlType": "VARCHAR(32)"
+                },
+                {
+                  "Mapping": "$.shipToCity",
+                  "Name": "shipToCity",
+                  "SqlType": "VARCHAR(32)"
+                },
+                {
+                  "Mapping": "$.shipToState",
+                  "Name": "shipToState",
+                  "SqlType": "VARCHAR(16)"
+                },
+                {
+                  "Mapping": "$.shipToZip",
+                  "Name": "shipToZip",
+                  "SqlType": "VARCHAR(16)"
+                }
+              ],
+              "RecordFormat": {
+                "RecordFormatType": "JSON"
+              }
+            },
+            "KinesisStreamsInput": {
+              "ResourceARN": {
+                "Fn::GetAtt": [
+                  "OrderStreamId16ACDCBF",
+                  "Arn"
+                ]
+              },
+              "RoleARN": {
+                "Fn::GetAtt": [
+                  "kdaOrderRole3DBC5E59",
+                  "Arn"
+                ]
+              }
+            },
+            "NamePrefix": "ord"
+          }
+        ],
+        "ApplicationDescription": "ETL for orders",
+        "ApplicationName": "KDA-OrderETL"
+      },
+      "Metadata": {
+        "aws:cdk:path": "KinesisStreamETLStack/KDA-OrderETLAppId"
+      }
+    }
+  },
+  "Conditions": {
+    "AwsCdkKinesisEncryptedStreamsUnsupportedRegions": {
+      "Fn::Or": [
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "AWS::Region"
+            },
+            "cn-north-1"
+          ]
+        },
+        {
+          "Fn::Equals": [
+            {
+              "Ref": "AWS::Region"
+            },
+            "cn-northwest-1"
+          ]
+        }
+      ]
+    }
+  }
+}
