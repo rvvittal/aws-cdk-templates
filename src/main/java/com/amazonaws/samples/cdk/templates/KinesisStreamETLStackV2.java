@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import software.amazon.awscdk.core.CfnParameter;
-import software.amazon.awscdk.core.ConcreteDependable;
 import software.amazon.awscdk.core.Construct;
 import software.amazon.awscdk.core.Stack;
 import software.amazon.awscdk.core.StackProps;
@@ -19,16 +18,17 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.kinesis.Stream;
 import software.amazon.awscdk.services.kinesisanalytics.*;
+import software.amazon.awscdk.services.kinesisanalytics.CfnApplicationV2.SqlApplicationConfigurationProperty;
 import software.amazon.awscdk.services.s3.Bucket;
 
 
-public class KinesisStreamETLStack extends Stack {
+public class KinesisStreamETLStackV2 extends Stack {
 
-	public KinesisStreamETLStack(final Construct parent, final String id) {
+	public KinesisStreamETLStackV2(final Construct parent, final String id) {
 		this(parent, id, null);
 	}
 
-	public KinesisStreamETLStack(final Construct parent, final String id, final StackProps props) {
+	public KinesisStreamETLStackV2(final Construct parent, final String id, final StackProps props) {
 		super(parent, id, props);
 		
 		
@@ -153,25 +153,25 @@ public class KinesisStreamETLStack extends Stack {
 		
 		
 		
-		CfnApplication.InputSchemaProperty.Builder  kdaInputSchema = new CfnApplication.InputSchemaProperty.Builder();
+		CfnApplicationV2.InputSchemaProperty.Builder  kdaInputSchema = new CfnApplicationV2.InputSchemaProperty.Builder();
 		
 		
-		CfnApplication.RecordColumnProperty rcpOrderId = new CfnApplication.RecordColumnProperty.Builder().name("orderId").sqlType("INT").mapping("$.orderId").build();
-		CfnApplication.RecordColumnProperty rcpItemId = new CfnApplication.RecordColumnProperty.Builder().name("itemId").sqlType("INT").mapping("$.orderId").build();
-		CfnApplication.RecordColumnProperty rcpItemQty = new CfnApplication.RecordColumnProperty.Builder().name("itemQuantity").sqlType("INT").mapping("$.itemQuantity").build();
-		CfnApplication.RecordColumnProperty rcpItemAmt = new CfnApplication.RecordColumnProperty.Builder().name("itemAmount").sqlType("REAL").mapping("$.itemAmount").build();
-		CfnApplication.RecordColumnProperty rcpItemStatus = new CfnApplication.RecordColumnProperty.Builder().name("itemStatus").sqlType("VARCHAR(8)").mapping("$.itemStatus").build();
-		CfnApplication.RecordColumnProperty rcpOrderDtTm = new CfnApplication.RecordColumnProperty.Builder().name("orderDateTime").sqlType("TIMESTAMP").mapping("$.orderDateTime").build();
+		CfnApplicationV2.RecordColumnProperty rcpOrderId = new CfnApplicationV2.RecordColumnProperty.Builder().name("orderId").sqlType("INT").mapping("$.orderId").build();
+		CfnApplicationV2.RecordColumnProperty rcpItemId = new CfnApplicationV2.RecordColumnProperty.Builder().name("itemId").sqlType("INT").mapping("$.orderId").build();
+		CfnApplicationV2.RecordColumnProperty rcpItemQty = new CfnApplicationV2.RecordColumnProperty.Builder().name("itemQuantity").sqlType("INT").mapping("$.itemQuantity").build();
+		CfnApplicationV2.RecordColumnProperty rcpItemAmt = new CfnApplicationV2.RecordColumnProperty.Builder().name("itemAmount").sqlType("REAL").mapping("$.itemAmount").build();
+		CfnApplicationV2.RecordColumnProperty rcpItemStatus = new CfnApplicationV2.RecordColumnProperty.Builder().name("itemStatus").sqlType("VARCHAR(8)").mapping("$.itemStatus").build();
+		CfnApplicationV2.RecordColumnProperty rcpOrderDtTm = new CfnApplicationV2.RecordColumnProperty.Builder().name("orderDateTime").sqlType("TIMESTAMP").mapping("$.orderDateTime").build();
 		
-		CfnApplication.RecordColumnProperty rcpRecordType = new CfnApplication.RecordColumnProperty.Builder().name("recordType").sqlType("VARCHAR(16)").mapping("$.recordType").build();
-		CfnApplication.RecordColumnProperty rcpOrderAmount = new CfnApplication.RecordColumnProperty.Builder().name("orderAmount").sqlType("DOUBLE").mapping("$.orderAmount").build();
-		CfnApplication.RecordColumnProperty rcpOrderStatus = new CfnApplication.RecordColumnProperty.Builder().name("orderStatus").sqlType("VARCHAR(8)").mapping("$.orderStatus").build();
-		CfnApplication.RecordColumnProperty rcpShipToName = new CfnApplication.RecordColumnProperty.Builder().name("shipToName").sqlType("VARCHAR(32)").mapping("$.shipToName").build();
+		CfnApplicationV2.RecordColumnProperty rcpRecordType = new CfnApplicationV2.RecordColumnProperty.Builder().name("recordType").sqlType("VARCHAR(16)").mapping("$.recordType").build();
+		CfnApplicationV2.RecordColumnProperty rcpOrderAmount = new CfnApplicationV2.RecordColumnProperty.Builder().name("orderAmount").sqlType("DOUBLE").mapping("$.orderAmount").build();
+		CfnApplicationV2.RecordColumnProperty rcpOrderStatus = new CfnApplicationV2.RecordColumnProperty.Builder().name("orderStatus").sqlType("VARCHAR(8)").mapping("$.orderStatus").build();
+		CfnApplicationV2.RecordColumnProperty rcpShipToName = new CfnApplicationV2.RecordColumnProperty.Builder().name("shipToName").sqlType("VARCHAR(32)").mapping("$.shipToName").build();
 		
-		CfnApplication.RecordColumnProperty rcpShipToAddress = new CfnApplication.RecordColumnProperty.Builder().name("shipToAddress").sqlType("VARCHAR(32)").mapping("$.shipToAddress").build();
-		CfnApplication.RecordColumnProperty rcpShipToCity = new CfnApplication.RecordColumnProperty.Builder().name("shipToCity").sqlType("VARCHAR(32)").mapping("$.shipToCity").build();
-		CfnApplication.RecordColumnProperty rcpShipToState = new CfnApplication.RecordColumnProperty.Builder().name("shipToState").sqlType("VARCHAR(16)").mapping("$.shipToState").build();
-		CfnApplication.RecordColumnProperty rcpShipToZip = new CfnApplication.RecordColumnProperty.Builder().name("shipToZip").sqlType("VARCHAR(16)").mapping("$.shipToZip").build();
+		CfnApplicationV2.RecordColumnProperty rcpShipToAddress = new CfnApplicationV2.RecordColumnProperty.Builder().name("shipToAddress").sqlType("VARCHAR(32)").mapping("$.shipToAddress").build();
+		CfnApplicationV2.RecordColumnProperty rcpShipToCity = new CfnApplicationV2.RecordColumnProperty.Builder().name("shipToCity").sqlType("VARCHAR(32)").mapping("$.shipToCity").build();
+		CfnApplicationV2.RecordColumnProperty rcpShipToState = new CfnApplicationV2.RecordColumnProperty.Builder().name("shipToState").sqlType("VARCHAR(16)").mapping("$.shipToState").build();
+		CfnApplicationV2.RecordColumnProperty rcpShipToZip = new CfnApplicationV2.RecordColumnProperty.Builder().name("shipToZip").sqlType("VARCHAR(16)").mapping("$.shipToZip").build();
 		
 		
 		List<Object> rcpList = new ArrayList<Object>();
@@ -193,63 +193,72 @@ public class KinesisStreamETLStack extends Stack {
 		
 		kdaInputSchema.recordColumns(rcpList);
 		
-		CfnApplication.KinesisStreamsInputProperty.Builder ksiBuilder = new CfnApplication.KinesisStreamsInputProperty.Builder();
+		CfnApplicationV2.KinesisStreamsInputProperty.Builder ksiBuilder = new CfnApplicationV2.KinesisStreamsInputProperty.Builder();
 		//ksiBuilder.roleArn("arn:aws:iam::716664005094:role/service-role/kinesis-analytics-KDA-OrderProcess-us-east-1");
-		ksiBuilder.roleArn(kdaOrderRole.getRoleArn());
+		//ksiBuilder.roleArn(kdaOrderRole.getRoleArn());
 		ksiBuilder.resourceArn(orderStream.getStreamArn());
 		
-		CfnApplication.RecordFormatProperty.Builder rfBuilder = new CfnApplication.RecordFormatProperty.Builder();
+		CfnApplicationV2.RecordFormatProperty.Builder rfBuilder = new CfnApplicationV2.RecordFormatProperty.Builder();
 		rfBuilder.recordFormatType("JSON");
 		
-		CfnApplication.MappingParametersProperty.Builder mpBuilder = new CfnApplication.MappingParametersProperty.Builder();
+		CfnApplicationV2.MappingParametersProperty.Builder mpBuilder = new CfnApplicationV2.MappingParametersProperty.Builder();
 		//mpBuilder.
 		
-		CfnApplication.JSONMappingParametersProperty.Builder jmpBuilder = new CfnApplication.JSONMappingParametersProperty.Builder();
+		CfnApplicationV2.JSONMappingParametersProperty.Builder jmpBuilder = new CfnApplicationV2.JSONMappingParametersProperty.Builder();
 		jmpBuilder.recordRowPath("$");
 		
 		mpBuilder.jsonMappingParameters(jmpBuilder.build());
 		
 		kdaInputSchema.recordFormat(rfBuilder.build());
-
 		
+		
+		
+			
 
-		CfnApplication.InputProperty.Builder inputBuilder = new CfnApplication.InputProperty.Builder();
+		CfnApplicationV2.InputProperty.Builder inputBuilder = new CfnApplicationV2.InputProperty.Builder();
 		
 		inputBuilder.inputSchema(kdaInputSchema.build());
-		inputBuilder.namePrefix("SOURCE_SQL_STREAM");
+		inputBuilder.namePrefix("ord");
 		inputBuilder.kinesisStreamsInput(ksiBuilder.build());
 		
 		List<Object> inputs = new ArrayList<Object>();
 		inputs.add(inputBuilder.build());
 		
-		CfnApplicationOutput.KinesisStreamsOutputProperty.Builder ksoBuilder = new CfnApplicationOutput.KinesisStreamsOutputProperty.Builder();
-		ksoBuilder.roleArn(kdaOrderRole.getRoleArn());
-		ksoBuilder.resourceArn(orderEStream.getStreamArn());
-		
-		CfnApplicationOutput.DestinationSchemaProperty.Builder dsp = CfnApplicationOutput.DestinationSchemaProperty.builder();
-		dsp.recordFormatType("JSON");
 		
 		
-		CfnApplicationOutput.OutputProperty.Builder outputBuilder = new CfnApplicationOutput.OutputProperty.Builder();
-		outputBuilder.kinesisStreamsOutput(ksoBuilder.build());
-		outputBuilder.destinationSchema(dsp.build());
+		CfnApplicationV2.CodeContentProperty.Builder ccBldr = new CfnApplicationV2.CodeContentProperty.Builder();	
+		ccBldr.textContent("CREATE OR REPLACE STREAM \"ORDERSTREAM\"(\n" + 
+				"   \"orderId\" INTEGER, \n" + 
+				"   \"orderAmount\" DECIMAL(5,2),\n" + 
+				"   \"orderStatus\" VARCHAR(8),\n" + 
+				"   \"orderDateTime\" TIMESTAMP,\n" + 
+				"   \"shipToName\" VARCHAR(32),\n" + 
+				"   \"shipToAddress\" VARCHAR(32),\n" + 
+				"   \"shipToCity\" VARCHAR(32),\n" + 
+				"   \"shipToState\" VARCHAR(16),\n" + 
+				"   \"shipToZip\" VARCHAR(16),\n" + 
+				"   \"recordType\" VARCHAR(16));");
+		
+		CfnApplicationV2.ApplicationCodeConfigurationProperty.Builder appcodeBldr = new CfnApplicationV2.ApplicationCodeConfigurationProperty.Builder();
+		appcodeBldr.codeContent(ccBldr.build());
+		appcodeBldr.codeContentType("PLAINTEXT");
+		
+		CfnApplicationV2.SqlApplicationConfigurationProperty.Builder sqlBldr = new CfnApplicationV2.SqlApplicationConfigurationProperty.Builder();
+		sqlBldr.inputs(inputs);
+		
+		CfnApplicationV2.ApplicationConfigurationProperty.Builder appConfBldr = new CfnApplicationV2.ApplicationConfigurationProperty.Builder();
+		appConfBldr.sqlApplicationConfiguration(sqlBldr.build());
+		appConfBldr.applicationCodeConfiguration(appcodeBldr.build());
 		
 		
-		CfnApplication appConstruct = CfnApplication.Builder.create(this, "KDA-OrderETLAppId")
+		
+		CfnApplicationV2.Builder.create(this, "KDA-OrderETLAppId")
 		.applicationName("KDA-OrderETL")
 		.applicationDescription("ETL for orders")
-		.inputs(inputs)
+		.applicationConfiguration(appConfBldr.build())
+		.serviceExecutionRole(kdaOrderRole.getRoleArn())
+		.runtimeEnvironment("SQL-1_0")
 		.build();
-		
-		
-		
-		CfnApplicationOutput appOutConstruct = CfnApplicationOutput.Builder.create(this, "KDA-OrderETLAppId2")
-		 .applicationName("KDA-OrderETL")
-		 .output(outputBuilder.build())
-		 .build();
-		
-		appOutConstruct.addDependsOn(appConstruct);
-		 
 		
 	}
 
