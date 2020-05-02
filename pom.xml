@@ -61,6 +61,21 @@
             <artifactId>kinesisanalytics</artifactId>
             <version>1.35.0</version>
         </dependency>
+         <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>lambda</artifactId>
+            <version>1.35.0</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>dynamodb</artifactId>
+            <version>1.35.0</version>
+        </dependency>
+         <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>lambda-event-sources</artifactId>
+            <version>1.35.0</version>
+        </dependency>
 
         <!-- https://mvnrepository.com/artifact/junit/junit -->
         <dependency>

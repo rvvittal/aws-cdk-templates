@@ -5,12 +5,16 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import software.amazon.awscdk.core.CfnParameter;
 import software.amazon.awscdk.core.ConcreteDependable;
 import software.amazon.awscdk.core.Construct;
+import software.amazon.awscdk.core.Duration;
+import software.amazon.awscdk.core.RemovalPolicy;
 import software.amazon.awscdk.core.Stack;
 import software.amazon.awscdk.core.StackProps;
+import software.amazon.awscdk.services.dynamodb.CfnTable;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.Policy;
 import software.amazon.awscdk.services.iam.PolicyDocument;
@@ -19,7 +23,20 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.kinesis.Stream;
 import software.amazon.awscdk.services.kinesisanalytics.*;
+import software.amazon.awscdk.services.lambda.Code;
+import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.FunctionProps;
+import software.amazon.awscdk.services.lambda.IEventSource;
+import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.lambda.StartingPosition;
+import software.amazon.awscdk.services.lambda.eventsources.KinesisEventSource;
 import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.dynamodb.Attribute;
+import software.amazon.awscdk.services.dynamodb.AttributeType;
+import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.dynamodb.TableProps;
+
+
 
 
 public class KinesisStreamETLStack extends Stack {
@@ -62,7 +79,7 @@ public class KinesisStreamETLStack extends Stack {
 		
 		
 		
-		Bucket.Builder bucketBldr = Bucket.Builder.create(this, "bucketId");
+		Bucket.Builder bucketBldr = Bucket.Builder.create(this, "bucketId").removalPolicy(RemovalPolicy.DESTROY);
 		Bucket bucket = bucketBldr.bucketName(productsBucket.getValueAsString()).build();
 		
 
@@ -131,16 +148,11 @@ public class KinesisStreamETLStack extends Stack {
 		PolicyDocument.Builder policyDoc = PolicyDocument.Builder.create();
 		policyDoc.statements(policyStmtList);
 		
-		/*
-		Policy.Builder policy = Policy.Builder.create(this,"kdaOrderETLPolicy");
-		policy.policyName("KDAOrderETLPolicy");
-		policy.statements(policyStmtList);
-		*/
+		
 		
 		HashMap<String, PolicyDocument> policyMap = new HashMap<String, PolicyDocument>();
 		policyMap.put("kdaPolicy", policyDoc.build());
 		
-		//("kdaPolicy", policyDoc.build());
 		
 		Role kdaOrderRole =
 		        Role.Builder.create(this, "kdaOrderRole")
@@ -157,7 +169,7 @@ public class KinesisStreamETLStack extends Stack {
 		
 		
 		CfnApplication.RecordColumnProperty rcpOrderId = new CfnApplication.RecordColumnProperty.Builder().name("orderId").sqlType("INT").mapping("$.orderId").build();
-		CfnApplication.RecordColumnProperty rcpItemId = new CfnApplication.RecordColumnProperty.Builder().name("itemId").sqlType("INT").mapping("$.orderId").build();
+		CfnApplication.RecordColumnProperty rcpItemId = new CfnApplication.RecordColumnProperty.Builder().name("itemId").sqlType("INT").mapping("$.itemId").build();
 		CfnApplication.RecordColumnProperty rcpItemQty = new CfnApplication.RecordColumnProperty.Builder().name("itemQuantity").sqlType("INT").mapping("$.itemQuantity").build();
 		CfnApplication.RecordColumnProperty rcpItemAmt = new CfnApplication.RecordColumnProperty.Builder().name("itemAmount").sqlType("REAL").mapping("$.itemAmount").build();
 		CfnApplication.RecordColumnProperty rcpItemStatus = new CfnApplication.RecordColumnProperty.Builder().name("itemStatus").sqlType("VARCHAR(8)").mapping("$.itemStatus").build();
@@ -183,6 +195,7 @@ public class KinesisStreamETLStack extends Stack {
 		rcpList.add(rcpItemStatus);
 		rcpList.add(rcpOrderDtTm);
 		rcpList.add(rcpRecordType);
+		rcpList.add(rcpOrderAmount);
 		rcpList.add(rcpOrderStatus);
 		rcpList.add(rcpShipToName);
 		rcpList.add(rcpShipToAddress);
@@ -226,6 +239,7 @@ public class KinesisStreamETLStack extends Stack {
 		ksoBuilder.roleArn(kdaOrderRole.getRoleArn());
 		ksoBuilder.resourceArn(orderEStream.getStreamArn());
 		
+		
 		CfnApplicationOutput.DestinationSchemaProperty.Builder dsp = CfnApplicationOutput.DestinationSchemaProperty.builder();
 		dsp.recordFormatType("JSON");
 		
@@ -233,6 +247,8 @@ public class KinesisStreamETLStack extends Stack {
 		CfnApplicationOutput.OutputProperty.Builder outputBuilder = new CfnApplicationOutput.OutputProperty.Builder();
 		outputBuilder.kinesisStreamsOutput(ksoBuilder.build());
 		outputBuilder.destinationSchema(dsp.build());
+		
+		
 		
 		
 		CfnApplication appConstruct = CfnApplication.Builder.create(this, "KDA-OrderETLAppId")
@@ -249,8 +265,114 @@ public class KinesisStreamETLStack extends Stack {
 		 .build();
 		
 		appOutConstruct.addDependsOn(appConstruct);
+		
+		CfnApplicationReferenceDataSource.S3ReferenceDataSourceProperty.Builder	s3Ref = new CfnApplicationReferenceDataSource.S3ReferenceDataSourceProperty.Builder();	
+		s3Ref.bucketArn(bucket.getBucketArn());
+		s3Ref.referenceRoleArn(kdaOrderRole.getRoleArn());
+		s3Ref.fileKey("products/products.json");
+		
+		
+		CfnApplicationReferenceDataSource.RecordColumnProperty rcpPrdId = new CfnApplicationReferenceDataSource.RecordColumnProperty.Builder().name("productId").sqlType("INT").mapping("$.productId").build();
+		CfnApplicationReferenceDataSource.RecordColumnProperty rcpPrdNm = new CfnApplicationReferenceDataSource.RecordColumnProperty.Builder().name("productName").sqlType("VARCHAR(32)").mapping("$.productName").build();
+		CfnApplicationReferenceDataSource.RecordColumnProperty rcpPrdPrice = new CfnApplicationReferenceDataSource.RecordColumnProperty.Builder().name("productPrice").sqlType("REAL").mapping("$.productPrice").build();
+		
+		List<Object> rcpPrdList = new ArrayList<Object>();
+		rcpPrdList.add(rcpPrdId);
+		rcpPrdList.add(rcpPrdNm);
+		rcpPrdList.add(rcpPrdPrice);
+		
+		CfnApplicationReferenceDataSource.RecordFormatProperty.Builder rfpB = new CfnApplicationReferenceDataSource.RecordFormatProperty.Builder();
+		rfpB.recordFormatType("JSON");
+		
+		CfnApplicationReferenceDataSource.ReferenceSchemaProperty.Builder rfsB = new CfnApplicationReferenceDataSource.ReferenceSchemaProperty.Builder();
+		rfsB.recordColumns(rcpPrdList);
+		rfsB.recordFormat(rfpB.build());
+		
+		CfnApplicationReferenceDataSource.ReferenceDataSourceProperty.Builder refDs = new CfnApplicationReferenceDataSource.ReferenceDataSourceProperty.Builder();
+		refDs.s3ReferenceDataSource(s3Ref.build());
+		refDs.referenceSchema(rfsB.build());
+		refDs.tableName("products");
+		
+		
+		CfnApplicationReferenceDataSource.Builder appRefDsb = CfnApplicationReferenceDataSource.Builder.create(this, "s3RefDs");
+		appRefDsb.applicationName("KDA-OrderETL");
+		appRefDsb.referenceDataSource(refDs.build());
+		
+		
+		CfnApplicationReferenceDataSource appDs = appRefDsb.build();
+		appDs.addDependsOn(appConstruct);
+		
+		
+		
+		
+		
+		 // final Bucket bucket2 = new Bucket(this, "OrderEnrichmentSinkStore");
+		  Bucket bucket2 = Bucket.Builder.create(this, "OrderEnrichmentSinkStore").removalPolicy(RemovalPolicy.DESTROY).build();
+
+		  
+		 
+	      
+	      TableProps tableProps;
+	        Attribute partitionKey = Attribute.builder()
+	                .name("orderId")
+	                .type(AttributeType.NUMBER)
+	                .build();
+	        Attribute sortKey = Attribute.builder()
+	                .name("itemId")
+	                .type(AttributeType.NUMBER)
+	                .build();
+	        tableProps = TableProps.builder()
+	                .tableName("OrderEnriched")
+	                .partitionKey(partitionKey)
+	                .sortKey(sortKey)
+	                // The default removal policy is RETAIN, which means that cdk destroy will not attempt to delete
+	                // the new table, and it will remain in your account until manually deleted. By setting the policy to
+	                // DESTROY, cdk destroy will delete the table (even if it has data in it)
+	                .removalPolicy(RemovalPolicy.DESTROY)
+	                .build();
+	        
+	        Table dynamodbTable = new Table(this, "OrderEnriched", tableProps);
+	        
+	        
+	        Map<String, String> lambdaEnvMap = new HashMap<String, String>();
+			  lambdaEnvMap.put("BUCKET", bucket.getBucketName());
+			  lambdaEnvMap.put("TABLE_NAME", dynamodbTable.getTableName());
+		      lambdaEnvMap.put("PRIMARY_KEY","orderId");
+		      lambdaEnvMap.put("SORT_KEY","itemId");
+		      
+		    
+	      
+		  List<IEventSource> events= new ArrayList<>();
+		  
+		  
+		  
+		  KinesisEventSource.Builder keb =  KinesisEventSource.Builder.create(orderEStream);
+		  keb.parallelizationFactor(5);
+		  keb.batchSize(500);
+		  keb.startingPosition(StartingPosition.LATEST);
+
+		  events.add(keb.build());
+		  
+		  Function lambdaFunction =
+			        Function.Builder.create(this, "OrderEnrichmentSinkHandler")
+			            .code(Code.fromAsset("resources"))
+			            .handler("order_enrichment_sink.main")
+			            .timeout(Duration.seconds(300))
+			            .memorySize(512)
+			            .events(events)
+			            .runtime(Runtime.NODEJS_12_X)
+			            .environment(lambdaEnvMap)
+			            .build();
+
+
+	        bucket2.grantReadWrite(lambdaFunction);
+	        dynamodbTable.grantReadWriteData(lambdaFunction);
+	        
+	        
+	       
 		 
 		
 	}
-
+	
+	
 }
